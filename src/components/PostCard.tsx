@@ -1,22 +1,30 @@
 
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
+import { Link } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
+import { Textarea } from '@/components/ui/textarea';
+import { Separator } from '@/components/ui/separator';
 import { useAuth } from '@/contexts/AuthContext';
-import { Post, toggleLike } from '@/lib/api';
+import { Post, toggleLike, addComment } from '@/lib/api';
 import { toast } from '@/components/ui/use-toast';
+import { MessageCircle, Heart, Share2 } from 'lucide-react';
 
 interface PostCardProps {
   post: Post;
   onLikeToggle: (postId: string, liked: boolean) => void;
+  onCommentAdded?: (postId: string) => void;
 }
 
-const PostCard: React.FC<PostCardProps> = ({ post, onLikeToggle }) => {
+const PostCard: React.FC<PostCardProps> = ({ post, onLikeToggle, onCommentAdded }) => {
   const { user } = useAuth();
   const [isLiking, setIsLiking] = useState(false);
   const [showFullContent, setShowFullContent] = useState(false);
+  const [showComments, setShowComments] = useState(false);
+  const [newComment, setNewComment] = useState('');
+  const [isSubmittingComment, setIsSubmittingComment] = useState(false);
   
   const formatTimestamp = (date: Date) => {
     const now = new Date();
@@ -60,6 +68,48 @@ const PostCard: React.FC<PostCardProps> = ({ post, onLikeToggle }) => {
     }
   };
 
+  const handleAddComment = async () => {
+    if (!user) {
+      toast({
+        title: "Inicia sesión",
+        description: "Debes iniciar sesión para comentar",
+      });
+      return;
+    }
+    
+    if (!newComment.trim()) {
+      toast({
+        title: "Comentario vacío",
+        description: "Por favor escribe algo para comentar",
+      });
+      return;
+    }
+    
+    setIsSubmittingComment(true);
+    try {
+      await addComment(post.id, user.id, user.name, user.profilePicture, newComment.trim());
+      
+      setNewComment('');
+      if (onCommentAdded) {
+        onCommentAdded(post.id);
+      }
+      
+      toast({
+        title: "Comentario añadido",
+        description: "Tu comentario ha sido publicado correctamente",
+      });
+    } catch (error) {
+      console.error('Error adding comment:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo añadir el comentario",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmittingComment(false);
+    }
+  };
+
   // Check if content is longer than ~100 characters
   const isLongContent = post.content.length > 280;
   const displayContent = showFullContent || !isLongContent 
@@ -74,12 +124,19 @@ const PostCard: React.FC<PostCardProps> = ({ post, onLikeToggle }) => {
     >
       <Card className="overflow-hidden shadow-sm hover:shadow-md transition-shadow border-border/50">
         <CardHeader className="p-4 pb-2 flex flex-row items-center space-x-4">
-          <Avatar className="h-10 w-10">
-            <AvatarImage src={post.userProfilePicture} alt={post.userName} />
-            <AvatarFallback>{post.userName.charAt(0)}</AvatarFallback>
-          </Avatar>
+          <Link to={`/user/${post.userId}`}>
+            <Avatar className="h-10 w-10 cursor-pointer hover:opacity-90 transition-opacity">
+              <AvatarImage src={post.userProfilePicture} alt={post.userName} />
+              <AvatarFallback>{post.userName.charAt(0)}</AvatarFallback>
+            </Avatar>
+          </Link>
           <div className="flex flex-col">
-            <p className="font-medium text-foreground">{post.userName}</p>
+            <Link 
+              to={`/user/${post.userId}`}
+              className="font-medium text-foreground hover:underline"
+            >
+              {post.userName}
+            </Link>
             <p className="text-xs text-muted-foreground">
               {formatTimestamp(post.timestamp)}
             </p>
@@ -109,20 +166,11 @@ const PostCard: React.FC<PostCardProps> = ({ post, onLikeToggle }) => {
               onClick={handleLikeToggle}
               disabled={isLiking}
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill={post.liked ? 'currentColor' : 'none'}
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
+              <Heart
+                size={16}
                 className="mr-1"
-              >
-                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
-              </svg>
+                fill={post.liked ? "currentColor" : "none"}
+              />
               <span className="text-sm">{post.likes}</span>
             </Button>
           </div>
@@ -131,49 +179,99 @@ const PostCard: React.FC<PostCardProps> = ({ post, onLikeToggle }) => {
               variant="ghost"
               size="sm"
               className="p-1 h-8 px-2 rounded-full text-muted-foreground hover:text-foreground"
+              onClick={() => setShowComments(!showComments)}
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="mr-1"
-              >
-                <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
-              </svg>
-              <span className="text-sm">Comentar</span>
+              <MessageCircle size={16} className="mr-1" />
+              <span className="text-sm">
+                {post.comments.length > 0 ? `${post.comments.length} comentarios` : 'Comentar'}
+              </span>
             </Button>
             <Button
               variant="ghost"
               size="sm"
               className="p-1 h-8 px-2 rounded-full text-muted-foreground hover:text-foreground"
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="mr-1"
-              >
-                <path d="M17 1l4 4-4 4"></path>
-                <path d="M3 11V9a4 4 0 0 1 4-4h14"></path>
-                <path d="M7 23l-4-4 4-4"></path>
-                <path d="M21 13v2a4 4 0 0 1-4 4H3"></path>
-              </svg>
+              <Share2 size={16} className="mr-1" />
               <span className="text-sm">Compartir</span>
             </Button>
           </div>
         </CardFooter>
+
+        {showComments && (
+          <div className="px-4 py-3 bg-muted/20 border-t border-border/40">
+            {/* Sección de comentarios */}
+            <div className="space-y-4">
+              {post.comments.length > 0 && (
+                <div className="space-y-3">
+                  {post.comments.map((comment) => (
+                    <div key={comment.id} className="flex space-x-3">
+                      <Link to={`/user/${comment.userId}`}>
+                        <Avatar className="h-8 w-8 flex-shrink-0">
+                          <AvatarImage src={comment.userProfilePicture} alt={comment.userName} />
+                          <AvatarFallback>{comment.userName.charAt(0)}</AvatarFallback>
+                        </Avatar>
+                      </Link>
+                      <div className="flex-1">
+                        <div className="bg-muted/30 rounded-lg px-3 py-2">
+                          <Link 
+                            to={`/user/${comment.userId}`}
+                            className="font-medium text-foreground text-sm hover:underline"
+                          >
+                            {comment.userName}
+                          </Link>
+                          <p className="text-sm mt-1">{comment.content}</p>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {formatTimestamp(comment.timestamp)}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Formulario para añadir comentario */}
+              {user && (
+                <div className="flex space-x-3 mt-4">
+                  <Avatar className="h-8 w-8 flex-shrink-0">
+                    <AvatarImage src={user.profilePicture} alt={user.name} />
+                    <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 space-y-2">
+                    <Textarea
+                      placeholder="Escribe un comentario..."
+                      value={newComment}
+                      onChange={(e) => setNewComment(e.target.value)}
+                      rows={1}
+                      className="resize-none min-h-[2.5rem] text-sm py-2"
+                      disabled={isSubmittingComment}
+                    />
+                    <div className="flex justify-end">
+                      <Button 
+                        size="sm" 
+                        onClick={handleAddComment}
+                        disabled={isSubmittingComment || !newComment.trim()}
+                      >
+                        {isSubmittingComment ? 'Enviando...' : 'Comentar'}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {!user && (
+                <div className="text-center py-2">
+                  <p className="text-sm text-muted-foreground">
+                    <Link to="/login" className="text-primary hover:underline">
+                      Inicia sesión
+                    </Link>{' '}
+                    para comentar
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </Card>
     </motion.div>
   );

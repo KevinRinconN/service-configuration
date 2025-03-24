@@ -28,24 +28,25 @@ const Posts = () => {
     }
     
     // Fetch posts
-    const fetchPosts = async () => {
-      try {
-        const fetchedPosts = await getPosts();
-        setPosts(fetchedPosts);
-      } catch (error) {
-        console.error('Error fetching posts:', error);
-        toast({
-          title: "Error",
-          description: "No se pudieron cargar las publicaciones",
-          variant: "destructive",
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-    
     fetchPosts();
   }, [user, navigate]);
+  
+  const fetchPosts = async () => {
+    try {
+      setLoading(true);
+      const fetchedPosts = await getPosts();
+      setPosts(fetchedPosts);
+    } catch (error) {
+      console.error('Error fetching posts:', error);
+      toast({
+        title: "Error",
+        description: "No se pudieron cargar las publicaciones",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
   
   const handleLikeToggle = (postId: string, liked: boolean) => {
     setPosts(posts.map(post => 
@@ -53,6 +54,11 @@ const Posts = () => {
         ? { ...post, liked, likes: liked ? post.likes + 1 : post.likes - 1 }
         : post
     ));
+  };
+  
+  const handleCommentAdded = async () => {
+    // Refresh posts to get the updated comments
+    await fetchPosts();
   };
   
   const handleCreatePost = async (e: React.FormEvent) => {
@@ -196,6 +202,7 @@ const Posts = () => {
                     key={post.id} 
                     post={post} 
                     onLikeToggle={handleLikeToggle} 
+                    onCommentAdded={handleCommentAdded}
                   />
                 ))}
               </div>

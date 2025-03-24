@@ -13,6 +13,7 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Profile from "./pages/Profile";
 import Posts from "./pages/Posts";
+import UserProfile from "./pages/UserProfile";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -31,6 +32,7 @@ const App = () => (
               <Route path="/register" element={<Register />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/posts" element={<Posts />} />
+              <Route path="/user/:userId" element={<UserProfile />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </AnimatePresence>
