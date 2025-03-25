@@ -1,0 +1,111 @@
+services:
+  postgres:
+    image: postgres:latest
+    container_name: postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 12334
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  microservice-config:
+    build:
+      context: ./backend
+      dockerfile: microservice-config/Dockerfile
+    container_name: microservice-config
+    ports:
+      - "8888:8888"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://host.docker.internal:8888/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  microservice-user:
+    build:
+      context: ./backend
+      dockerfile: microservice-user/Dockerfile
+    container_name: microservice-user
+    ports:
+      - "8090:8090"
+    environment:
+      SPRING_CONFIG_IMPORT: optional:configserver:http://host.docker.internal:8888
+    depends_on:
+      microservice-config:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      
+
+  microservice-publication:
+    build:
+      context: ./backend
+      dockerfile: microservice-publication/Dockerfile
+    container_name: microservice-publication
+    ports:
+      - "9090:9090"
+    environment:
+      SPRING_CONFIG_IMPORT: optional:configserver:http://host.docker.internal:8888
+    depends_on:
+      microservice-config:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      
+
+  microservice-eureka:
+    build:
+      context: ./backend
+      dockerfile: microservice-eureka/Dockerfile
+    container_name: microservice-eureka
+    ports:
+      - "8761:8761"
+    environment:
+      SPRING_CONFIG_IMPORT: optional:configserver:http://host.docker.internal:8888
+    depends_on:
+      microservice-config:
+        condition: service_healthy
+
+      
+
+  microservice-gateway:
+    build:
+      context: ./backend
+      dockerfile: microservice-gateway/Dockerfile
+    container_name: gateway
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_CONFIG_IMPORT: optional:configserver:http://host.docker.internal:8888
+    depends_on:
+      microservice-config:
+        condition: service_healthy
+      microservice-eureka:
+        condition: service_started
+      microservice-user:
+        condition: service_started
+      microservice-publication:
+        condition: service_started
+      
+
+  frontend:
+    image: my-react-app
+    container_name: my_react_app
+    restart: always
+    environment:
+      - VITE_API_BASE_URL=http://microservice-gateway:8080
+    ports:
+      - "80:80"
+    depends_on:
+      - microservice-gateway
+
+volumes:
+  postgres_data:
