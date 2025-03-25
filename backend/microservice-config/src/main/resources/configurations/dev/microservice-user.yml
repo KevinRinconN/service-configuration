@@ -1,0 +1,28 @@
+server:
+  port: 8090
+
+security:
+  jwt:
+    expiration-in-minutes: 1440
+    secret-key: IVQR8hM2YZruFG7+bmbT6Of8Eb7FzP1FZwI80SM1ep4=
+
+spring:
+  application:
+    name: microservice-user
+  datasource:
+    url: jdbc:postgresql://postgres:5432/user
+    username: postgres
+    password: 12334
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: create
+    database: postgresql
+
+eureka:
+  instance:
+    hostname: localhost
+  client:
+    serviceUrl:
+      defaultZone: http://host.docker.internal:8761/eureka

@@ -1,0 +1,37 @@
+FROM openjdk:17-jdk-alpine AS builder
+
+WORKDIR /app
+
+# Copia el archivo settings.gradle y build.gradle del root del monorepo
+COPY ../settings.gradle settings.gradle
+COPY ../build.gradle build-root.gradle
+
+# Copia los archivos Gradle wrapper
+COPY ../gradlew gradlew
+COPY ../gradle gradle
+RUN chmod +x ./gradlew
+
+# Copia todo el código fuente del monorepo
+COPY ../ ./
+
+# Configura Gradle para usar el proyecto correcto
+WORKDIR /app/microservice-publication
+
+# Descarga dependencias sin compilar todo
+RUN ../gradlew dependencies --no-daemon
+
+# Compila el JAR del microservicio
+RUN ../gradlew clean build -x test
+
+# Crea la imagen final
+FROM openjdk:17-jdk-alpine
+
+WORKDIR /app
+COPY --from=builder /app/microservice-publication/build/libs/*.jar app.jar
+
+# Define el puerto
+ENV PORT 8090
+EXPOSE $PORT
+
+# Ejecuta la aplicación
+ENTRYPOINT ["java", "-jar", "app.jar"]

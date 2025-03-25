@@ -1,0 +1,14 @@
+rootProject.name = 'microservices'
+
+include 'microservice-gateway'
+include 'microservice-eureka'
+include 'microservice-config'
+include 'microservice-common'
+
+// Manejo de perfiles de usuario.
+include 'microservice-user'
+
+//  Creación y gestión de publicaciones
+include 'microservice-publication'
+
+

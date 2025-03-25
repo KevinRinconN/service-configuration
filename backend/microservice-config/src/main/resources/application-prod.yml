@@ -1,0 +1,9 @@
+spring:
+  config:
+    activate:
+      on-profile: prod
+  cloud:
+    config:
+      server:
+        native:
+          search-locations: classpath:/configurations/prod
