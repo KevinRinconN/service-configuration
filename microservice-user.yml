@@ -29,10 +29,15 @@ spring:
     hibernate:
       ddl-auto: create
     database: postgresql
+  cloud:
+    loadbalancer:
+      retry:
+        enabled: true
 
 eureka:
   instance:
-    hostname: localhost
+    appName: microservice-user
+    preferIpAddress: true
   client:
     serviceUrl:
       defaultZone: http://host.docker.internal:8761/eureka
