@@ -6,7 +6,7 @@ export interface Post {
     likes: number;
     likedByUser: boolean;
     comments: number;
-    createdAtFormatted: Date;
+    createdAtFormatted: string;
     liked: boolean;
     
 }
@@ -24,6 +24,6 @@ export interface CreatePost {
 export interface Comment {
     id: number;
     content: string;
-    createdAtFormatted: Date;
+    createdAtFormatted: string;
     user: UserPost;
 }

@@ -99,7 +99,7 @@ const PostCard: React.FC<PostCardProps> = ({ post, onLikeToggle, onCommentAdded 
               {post.user.username}
             </Link>
             <p className="text-xs text-muted-foreground">
-              {formatTimestamp(new Date (post.createdAtFormatted))}
+              {formatTimestamp(post.createdAtFormatted)}
             </p>
           </div>
         </CardHeader>
@@ -178,7 +178,7 @@ const PostCard: React.FC<PostCardProps> = ({ post, onLikeToggle, onCommentAdded 
                           <p className="text-sm mt-1">{comment.content}</p>
                         </div>
                         <p className="text-xs text-muted-foreground mt-1">
-                          {formatTimestamp(new Date(comment.createdAtFormatted))}
+                          {formatTimestamp(comment.createdAtFormatted)}
                         </p>
                       </div>
                     </div>

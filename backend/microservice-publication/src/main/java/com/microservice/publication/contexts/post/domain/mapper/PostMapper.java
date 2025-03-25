@@ -9,8 +9,12 @@ import org.mapstruct.Named;
 import org.mapstruct.NullValuePropertyMappingStrategy;
 import org.mapstruct.factory.Mappers;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
+import java.time.temporal.TemporalAccessor;
 
 @Mapper(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
 public interface PostMapper {
@@ -23,17 +27,34 @@ public interface PostMapper {
     @Mapping(target = "createdAtFormatted", source = "dto.createdAt", qualifiedByName = "formatDate")
     PostResponseDto toShow(PostDto dto, String currentUserId);
 
-//    @Named("mapUser")
-//    default UserPostDto mapUser(String userId) {
-//        UserPostDto user = new UserPostDto();
-//        user.setUsername(userId);
-//        return user;
-//    }
-
     @Named("formatDate")
     default String formatDate(String createdAt) {
         if (createdAt == null || createdAt.isEmpty()) return null;
-        LocalDateTime date = LocalDateTime.parse(createdAt, DateTimeFormatter.ISO_DATE_TIME);
-        return date.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+        try {
+            // First try parsing with nanoseconds precision
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd['T'][ ]HH:mm:ss[.SSSSSS]");
+            LocalDateTime date = LocalDateTime.parse(createdAt, formatter);
+            return date.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+        } catch (DateTimeParseException e1) {
+            try {
+                // Fallback to ISO_DATE_TIME for standard formats
+                TemporalAccessor parsed = DateTimeFormatter.ISO_DATE_TIME.parseBest(
+                        createdAt,
+                        ZonedDateTime::from,
+                        LocalDateTime::from,
+                        LocalDate::from
+                );
+
+                if (parsed instanceof ZonedDateTime) {
+                    return ((ZonedDateTime) parsed).format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+                } else if (parsed instanceof LocalDateTime) {
+                    return ((LocalDateTime) parsed).format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+                } else {
+                    return ((LocalDate) parsed).format(DateTimeFormatter.ofPattern("yyyy-MM-dd 00:00:00"));
+                }
+            } catch (DateTimeParseException e2) {
+                throw new IllegalArgumentException("Could not parse date: " + createdAt, e2);
+            }
+        }
     }
 }
