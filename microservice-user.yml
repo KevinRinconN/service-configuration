@@ -36,7 +36,8 @@ spring:
 
 eureka:
   instance:
-    hostname: microservice-user
+    appName: microservice-user  # Debe coincidir con @FeignClient
+    preferIpAddress: false 
   client:
     serviceUrl:
-      defaultZone: http://host.docker.internal:8761/eureka
+      defaultZone: http://microservice-eureka:8761/eureka

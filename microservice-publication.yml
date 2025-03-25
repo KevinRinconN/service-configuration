@@ -18,10 +18,10 @@ spring:
 
 eureka:
   instance:
-    hostname: localhost
+    hostname: microservice-publication
   client:
     service-url:
-      defaultZone: http://host.docker.internal:8761/eureka
+      defaultZone: http://microservice-eureka:8761/eureka
 
 feign:
   circuitbreaker:
