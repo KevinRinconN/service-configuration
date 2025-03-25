@@ -19,7 +19,7 @@ public class GetUserByIdUseCase {
             }
             return response.getData();
         } catch (Exception e) {
-            throw new NotFoundException("User not found since Feign: " + e.getMessage());
+            throw new NotFoundException("username not found since Feign: " + e.getMessage());
         }
 
     }

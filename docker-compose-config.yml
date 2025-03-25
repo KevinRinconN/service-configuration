@@ -1,0 +1,8 @@
+services:
+  microservice-config:
+    build:
+      context: ./backend
+      dockerfile: microservice-config/Dockerfile
+    container_name: microservice-config
+    ports:
+      - "8888:8888"
