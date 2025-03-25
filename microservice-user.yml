@@ -6,6 +6,16 @@ security:
     expiration-in-minutes: 1440
     secret-key: IVQR8hM2YZruFG7+bmbT6Of8Eb7FzP1FZwI80SM1ep4=
 
+management:
+  endpoint:
+    health:
+      show-details: always
+      probes:
+        enabled: true
+  health:
+    db:
+      enabled: true
+
 spring:
   application:
     name: microservice-user
