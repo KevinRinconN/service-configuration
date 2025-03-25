@@ -8,9 +8,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/contexts/AuthContext';
+import { Textarea } from './ui/textarea';
 
 const registerSchema = z.object({
-  name: z.string().min(2, 'El nombre debe tener al menos 2 caracteres'),
+  username: z.string().min(2, 'El nombre debe tener al menos 2 caracteres'),
+  firstname: z.string().min(2, 'El nombre debe tener al menos 2 caracteres'),
+  lastname: z.string().min(2, 'El nombre debe tener al menos 2 caracteres'),
+  bio: z.string(),
   email: z.string().email('Correo electrónico inválido'),
   password: z.string().min(6, 'La contraseña debe tener al menos 6 caracteres'),
   confirmPassword: z.string().min(6, 'La contraseña debe tener al menos 6 caracteres'),
@@ -29,7 +33,10 @@ const RegisterForm: React.FC = () => {
   const { register, handleSubmit, formState: { errors } } = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
     defaultValues: {
-      name: '',
+      username: '',
+      firstname: '',
+      lastname: '',
+      bio: '',
       email: '',
       password: '',
       confirmPassword: '',
@@ -39,7 +46,7 @@ const RegisterForm: React.FC = () => {
   const onSubmit = async (data: RegisterFormValues) => {
     setIsLoading(true);
     try {
-      await registerUser(data.name, data.email, data.password);
+      await registerUser(data.username, data.firstname, data.lastname, data.email, data.bio, data.password, "ADMIN");
       navigate('/posts');
     } catch (error) {
       console.error('Registration error:', error);
@@ -49,19 +56,47 @@ const RegisterForm: React.FC = () => {
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-5 text-start">
       <div className="space-y-2">
-        <Label htmlFor="name">Nombre completo</Label>
+        <Label htmlFor="username">Username</Label>
         <Input
-          id="name"
+          id="username"
           type="text"
-          placeholder="Juan Pérez"
+          placeholder="JuanPerez"
           disabled={isLoading}
-          {...register('name')}
-          className={errors.name ? 'border-destructive' : ''}
+          {...register('username')}
+          className={errors.username ? 'border-destructive' : ''}
         />
-        {errors.name && (
-          <p className="text-sm text-destructive mt-1">{errors.name.message}</p>
+        {errors.username && (
+          <p className="text-sm text-destructive mt-1">{errors.username.message}</p>
+        )}
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="firstname">Nombre</Label>
+        <Input
+          id="firstname"
+          type="text"
+          placeholder="Juan"
+          disabled={isLoading}
+          {...register('firstname')}
+          className={errors.firstname ? 'border-destructive' : ''}
+        />
+        {errors.firstname && (
+          <p className="text-sm text-destructive mt-1">{errors.firstname.message}</p>
+        )}
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="lastname">Apellido</Label>
+        <Input
+          id="lastname"
+          type="text"
+          placeholder="Perez"
+          disabled={isLoading}
+          {...register('lastname')}
+          className={errors.lastname ? 'border-destructive' : ''}
+        />
+        {errors.lastname && (
+          <p className="text-sm text-destructive mt-1">{errors.lastname.message}</p>
         )}
       </div>
       
@@ -78,6 +113,20 @@ const RegisterForm: React.FC = () => {
         />
         {errors.email && (
           <p className="text-sm text-destructive mt-1">{errors.email.message}</p>
+        )}
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="bio">Bio</Label>
+        <Textarea
+          id="bio"
+          placeholder="Desarrollador de sistemas"
+          autoComplete="bio"
+          disabled={isLoading}
+          {...register('bio')}
+          className={errors.bio ? 'border-destructive' : ''}
+        />
+        {errors.bio && (
+          <p className="text-sm text-destructive mt-1">{errors.bio.message}</p>
         )}
       </div>
       

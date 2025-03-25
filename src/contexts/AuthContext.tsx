@@ -1,14 +1,17 @@
 
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { toast } from '@/components/ui/use-toast';
+import { authLogin, createUser, getProfile } from '@/service/auth.service';
 
 // Define user type
 export interface User {
-  id: string;
-  name: string;
+  username: string;
+  firstname: string;
+  lastname: string;
   email: string;
   profilePicture: string;
   bio?: string;
+  token: string;
 }
 
 // Define auth context type
@@ -16,22 +19,13 @@ interface AuthContextType {
   user: User | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (name: string, email: string, password: string) => Promise<void>;
+  register: (username: string,firstname: string,lastname: string, email: string,bio: string, password: string, rol: string) => Promise<void>;
   logout: () => void;
-  updateProfile: (userData: Partial<User>) => Promise<void>;
 }
 
 // Create context
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Initial mock user for development
-const mockUser: User = {
-  id: '1',
-  name: 'Usuario Demo',
-  email: 'usuario@demo.com',
-  profilePicture: 'https://randomuser.me/api/portraits/women/44.jpg',
-  bio: 'Diseñador UX/UI apasionado por crear experiencias digitales hermosas y funcionales.'
-};
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -46,16 +40,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setLoading(false);
   }, []);
 
-  const login = async (email: string, password: string) => {
+  const login = async (username: string, password: string) => {
     setLoading(true);
     try {
       // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
+      const {data} = await authLogin(username, password);
+      const userData = await getProfile(data.data.accessToken);
+      const user = {...userData.data.data, token: data.data.accessToken}
       // Mock validation (in a real app, this would be a server request)
-      if (email === 'usuario@demo.com' && password === 'password123') {
-        setUser(mockUser);
-        localStorage.setItem('user', JSON.stringify(mockUser));
+      if (user) {
+        setUser(user);
+        localStorage.setItem('user', JSON.stringify(user));
         toast({
           title: "Inicio de sesión exitoso",
           description: "Bienvenido de nuevo",
@@ -66,6 +61,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Invalid credentials
       throw new Error('Credenciales inválidas');
     } catch (error) {
+      console.log(error)
       toast({
         title: "Error de inicio de sesión",
         description: "Correo electrónico o contraseña incorrectos",
@@ -77,20 +73,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const register = async (name: string, email: string, password: string) => {
+  const register = async (username: string,firstname: string,lastname: string, email: string, bio: string, password: string, rol: string) => {
     setLoading(true);
     try {
       // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Create a new user with the provided details
-      const newUser: User = {
-        id: (Math.random() * 1000).toFixed(0),
-        name,
+      const dataUser = await createUser({
+        username,
+        firstname,
+        lastname,
         email,
-        profilePicture: `https://randomuser.me/api/portraits/${Math.random() > 0.5 ? 'women' : 'men'}/${Math.floor(Math.random() * 100)}.jpg`,
-      };
+        bio,
+        password,
+        rol
+      });
       
+      const {data} = await authLogin(username, password);
+      const newUser = {...dataUser.data.data, token: data.data.accessToken}
       setUser(newUser);
       localStorage.setItem('user', JSON.stringify(newUser));
       
@@ -119,36 +117,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
   };
 
-  const updateProfile = async (userData: Partial<User>) => {
-    setLoading(true);
-    try {
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      if (user) {
-        const updatedUser = { ...user, ...userData };
-        setUser(updatedUser);
-        localStorage.setItem('user', JSON.stringify(updatedUser));
-        
-        toast({
-          title: "Perfil actualizado",
-          description: "Tus cambios han sido guardados",
-        });
-      }
-    } catch (error) {
-      toast({
-        title: "Error al actualizar",
-        description: "No se pudo actualizar el perfil",
-        variant: "destructive",
-      });
-      throw error;
-    } finally {
-      setLoading(false);
-    }
-  };
-
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout, updateProfile }}>
+    <AuthContext.Provider value={{ user, loading, login, register, logout }}>
       {children}
     </AuthContext.Provider>
   );
